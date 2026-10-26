@@ -1,77 +1,83 @@
 ---
 name: richiesta-medico
-description: Gestisce le richieste di farmaci al medico di base: scrive l'email per ricette/rinnovi e registra le scatole ritirate per tenere aggiornate le scorte. Usa questa skill ogni volta che l'utente dice cose come "devo chiedere la ricetta al medico", "scrivi al dottore per le medicine", "rinnovo ricetta", "finisco le pillole", "ho ritirato le medicine", "il medico mi ha dato N scatole", o simili. Email in italiano, formale e concisa, pronta da inviare.
+description: Manages medicine requests to a GP / family doctor. Drafts the prescription or renewal email and tracks stock by logging the boxes picked up. Use when the user says things like "I need to ask my doctor for a prescription", "write to the doctor for my meds", "renew my prescription", "I'm running out of pills", "I picked up my medicines", "the doctor gave me N boxes" — or in Italian "devo chiedere la ricetta al medico", "scrivi al dottore per le medicine", "rinnovo ricetta", "finisco le pillole", "ho ritirato le medicine". Works in any language.
 ---
 
-# Richiesta farmaci al medico
+# Doctor medicine requests
 
-Canale di comunicazione con il medico: **email**. La skill prepara la bozza (oggetto e testo) e la consegna in chat; non invia nulla da sola, l'invio lo fa l'utente.
+Prepares the email asking the doctor for a prescription, and keeps track of how long the medicines will last. For the user's own medicines only.
 
-Due modalità, solo per l'utente stesso, italiano cordiale e formale:
+The skill **drafts** the email in chat and never sends anything: the user sends it.
 
-- **Richiesta**: scrive l'email al medico per una ricetta (nuova o di rinnovo).
-- **Ritiro**: registra quante scatole l'utente ha ritirato, per aggiornare le scorte.
+## How the user talks to the skill
 
-Lo stato delle scorte sta in `scorte.md` (stessa cartella di questa skill). Leggilo a ogni uso e aggiornalo a ogni ritiro.
+Plain chat, no commands. Examples:
 
-## Profilo (da compilare una volta)
+- "Devo chiedere la ricetta" / "I need to renew my prescription" → **Request** mode
+- "Ho ritirato 2 scatole di X" / "I picked up 2 boxes of X" → **Pickup** mode
+- "Quando finiscono le medicine?" / "When do I run out?" → read the stock and answer in one line
 
-Se i campi sono vuoti, chiedili con `AskUserQuestion` alla prima richiesta e proponi di salvarli qui.
+## Data files
 
-- Nome e cognome:
-- Codice fiscale (opzionale, solo se il medico lo richiede):
-- Nome del medico / forma di cortesia (es. "Dottor Rossi", "Dottoressa Bianchi"):
-- Farmaci abituali (nome, dosaggio, posologia come da ricetta precedente, contenuto di una scatola es. "28 compresse"):
-- Anticipo minimo di richiesta: 2 giorni lavorativi prima della fine delle scorte (aumentalo se il medico ha tempi più lunghi)
+Personal data is never stored in this skill's shared files. It lives in the `dati/` folder next to this file (git-ignored, so it is not published with the skill):
 
-## Modalità Richiesta
+- `dati/profilo.md` — created on first use from `profilo.example.md`
+- `dati/scorte.md` — created on first use from `scorte.example.md`
 
-1. Capisci cosa serve: quali farmaci (anche solo "i soliti") e se è un rinnovo o una prima richiesta.
-2. Se manca un dato indispensabile (nome del farmaco, dosaggio), chiedilo. Non inventare mai nomi, dosaggi o quantità. La posologia serve solo a te per calcolare le scorte: non va nell'email.
-3. Calcola la data di fine scorta da `scorte.md`: (unità rimaste) ÷ (unità al giorno da posologia). Se l'utente indica già la data, usala.
-4. Verifica l'anticipo: la richiesta deve partire **almeno 2 giorni lavorativi prima** della fine scorta. Indica la data limite per inviare l'email. Se sei già dentro la soglia, segnala l'urgenza (oggetto e corpo) e avvisa l'utente in una riga.
-5. Scrivi l'email **senza indicare il numero di scatole**: lo decide il medico.
-6. Consegna solo l'email, senza commenti. Aggiungi una riga solo se manca un dato o se la soglia dei 2 giorni è superata.
+If `dati/` or a file in it is missing, create it from the example. Read both files on every use. Never delete history rows: append, don't overwrite.
 
-## Modalità Ritiro
+### First use (onboarding)
 
-Quando l'utente dice di aver ritirato i farmaci:
+If `dati/profilo.md` does not exist, collect the profile fields with `AskUserQuestion` (language and tone, doctor's name and form of address, regular medicines with dosage / units per day / units per box, preferred way to receive the prescription). Defaults: lead time 2 working days, formal tone, the user's own language. Save the answers, then continue with the request.
 
-1. Chiedi (se non detto) quante scatole di ciascun farmaco ha ricevuto e la data di ritiro.
-2. Aggiorna `scorte.md`: unità totali = scatole × contenuto della scatola, sommate alle unità rimaste.
-3. Ricalcola e comunica in una riga la nuova data di fine scorta e la data limite per la prossima richiesta.
+## Request mode
 
-## Struttura dell'email
+1. Work out which medicines are needed (even just "the usual ones") and whether it is a renewal or a first request.
+2. If a required datum is missing (medicine name, dosage), ask. Never invent names, dosages or quantities.
+3. From `dati/scorte.md`, compute the run-out date: units left ÷ units per day. If the user gives a date, use it.
+4. Check the lead time: the request must go out **at least the configured number of working days (default 2) before** the stock runs out. Give the latest date to send the email. If that window is already passed, mark it urgent in subject and body and tell the user in one line.
+5. Write the email. **Do not state the number of boxes**: the doctor decides.
+6. Deliver only the email. Add a single extra line only if data is missing or the lead time has been exceeded.
 
-- **Oggetto**: breve e chiaro. Es. `Richiesta ricetta – [Nome Cognome]`
-- **Saluto**: `Buongiorno Dottor/Dottoressa [Cognome],`
-- **Corpo** (3–5 righe):
-  - chi sei e cosa chiedi (rinnovo/nuova ricetta);
-  - elenco puntato dei farmaci con solo nome e dosaggio (niente posologia, la conosce il medico; niente quantità di scatole);
-  - data di fine scorta (es. "le scorte terminano il [data]");
-  - come preferisci ricevere la ricetta (NRE via email/SMS/ritiro in studio), se indicato.
-- **Chiusura**: `La ringrazio per la disponibilità. Cordiali saluti,` + nome e cognome.
+### Email structure
 
-## Regole
+- **Subject**: short and clear, e.g. `Prescription request – [Full name]` / `Richiesta ricetta – [Nome Cognome]`
+- **Greeting**: in the profile's language and tone.
+- **Body** (3–5 lines):
+  - who you are and what you ask (renewal / new prescription);
+  - bulleted list of medicines with **name and dosage only** (the doctor already knows the schedule);
+  - when the stock runs out;
+  - how to receive the prescription, if set in the profile.
+- **Closing**: thanks and full name.
 
-- Tono formale ma diretto, niente giri di parole.
-- Una sola richiesta per email; più farmaci, un unico elenco.
-- Non dare consigli medici, non suggerire farmaci o variazioni di dosaggio. Sintomi nuovi o effetti collaterali riferiti dall'utente vanno riportati al medico così come sono, senza interpretarli.
-- Mai cancellare lo storico in `scorte.md`: aggiungi righe, non sovrascrivere.
+Example (Italian, formal):
 
-## Esempio di email
+> **Oggetto**: Richiesta rinnovo ricetta – Mario Rossi
+>
+> Buongiorno Dottoressa Bianchi,
+>
+> le scrivo per chiederle il rinnovo della ricetta per i seguenti farmaci:
+>
+> - [Farmaco A] [dosaggio]
+> - [Farmaco B] [dosaggio]
+>
+> Le scorte terminano indicativamente il [data]. Mi sarebbe gradito ricevere il numero di ricetta elettronica via email.
+>
+> La ringrazio per la disponibilità.
+> Cordiali saluti,
+> Mario Rossi
 
-**Oggetto**: Richiesta rinnovo ricetta – Mario Rossi
+## Pickup mode
 
-Buongiorno Dottoressa Bianchi,
+When the user says they collected the medicines:
 
-le scrivo per chiederle il rinnovo della ricetta per i seguenti farmaci:
+1. Ask (if not stated) how many boxes of each medicine the doctor gave and the pickup date.
+2. Update `dati/scorte.md`: add boxes × units per box to the units left, and append a row to the pickup history.
+3. Reply in one line with the new run-out date and the latest date for the next request.
 
-- [Farmaco A] [dosaggio]
-- [Farmaco B] [dosaggio]
+## Rules
 
-Le scorte terminano indicativamente il [data]. Mi sarebbe gradito ricevere il numero di ricetta elettronica via email.
-
-La ringrazio per la disponibilità.
-Cordiali saluti,
-Mario Rossi
+- Concise, direct, no filler.
+- One request per email; several medicines go in a single list.
+- No medical advice: never suggest medicines or dosage changes. Report any new symptoms or side effects the user mentions to the doctor as stated, without interpreting them.
+- Posologia / units per day are used only to compute stock, never written in the email.
