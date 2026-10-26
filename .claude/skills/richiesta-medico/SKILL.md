@@ -5,7 +5,9 @@ description: Gestisce le richieste di farmaci al medico di base: scrive l'email 
 
 # Richiesta farmaci al medico
 
-Due modalità, solo per l'utente stesso, canale email, italiano cordiale e formale:
+Canale di comunicazione con il medico: **email**. La skill prepara la bozza (oggetto e testo) e la consegna in chat; non invia nulla da sola, l'invio lo fa l'utente.
+
+Due modalità, solo per l'utente stesso, italiano cordiale e formale:
 
 - **Richiesta**: scrive l'email al medico per una ricetta (nuova o di rinnovo).
 - **Ritiro**: registra quante scatole l'utente ha ritirato, per aggiornare le scorte.
@@ -25,7 +27,7 @@ Se i campi sono vuoti, chiedili con `AskUserQuestion` alla prima richiesta e pro
 ## Modalità Richiesta
 
 1. Capisci cosa serve: quali farmaci (anche solo "i soliti") e se è un rinnovo o una prima richiesta.
-2. Se manca un dato indispensabile (nome del farmaco, dosaggio, posologia), chiedilo. Non inventare mai nomi, dosaggi, posologie o quantità.
+2. Se manca un dato indispensabile (nome del farmaco, dosaggio), chiedilo. Non inventare mai nomi, dosaggi o quantità. La posologia serve solo a te per calcolare le scorte: non va nell'email.
 3. Calcola la data di fine scorta da `scorte.md`: (unità rimaste) ÷ (unità al giorno da posologia). Se l'utente indica già la data, usala.
 4. Verifica l'anticipo: la richiesta deve partire **almeno 2 giorni lavorativi prima** della fine scorta. Indica la data limite per inviare l'email. Se sei già dentro la soglia, segnala l'urgenza (oggetto e corpo) e avvisa l'utente in una riga.
 5. Scrivi l'email **senza indicare il numero di scatole**: lo decide il medico.
@@ -45,7 +47,7 @@ Quando l'utente dice di aver ritirato i farmaci:
 - **Saluto**: `Buongiorno Dottor/Dottoressa [Cognome],`
 - **Corpo** (3–5 righe):
   - chi sei e cosa chiedi (rinnovo/nuova ricetta);
-  - elenco puntato dei farmaci con dosaggio e posologia (nessuna quantità di scatole);
+  - elenco puntato dei farmaci con solo nome e dosaggio (niente posologia, la conosce il medico; niente quantità di scatole);
   - data di fine scorta (es. "le scorte terminano il [data]");
   - come preferisci ricevere la ricetta (NRE via email/SMS/ritiro in studio), se indicato.
 - **Chiusura**: `La ringrazio per la disponibilità. Cordiali saluti,` + nome e cognome.
@@ -65,8 +67,8 @@ Buongiorno Dottoressa Bianchi,
 
 le scrivo per chiederle il rinnovo della ricetta per i seguenti farmaci:
 
-- [Farmaco A] [dosaggio], [posologia]
-- [Farmaco B] [dosaggio], [posologia]
+- [Farmaco A] [dosaggio]
+- [Farmaco B] [dosaggio]
 
 Le scorte terminano indicativamente il [data]. Mi sarebbe gradito ricevere il numero di ricetta elettronica via email.
 
