@@ -14,14 +14,17 @@ Se i campi sotto sono vuoti, chiedili all'utente con `AskUserQuestion` alla prim
 - Nome e cognome:
 - Codice fiscale (opzionale, solo se il medico lo richiede):
 - Nome del medico / forma di cortesia (es. "Dottor Rossi", "Dottoressa Bianchi"):
-- Farmaci abituali (nome, dosaggio, posologia come da ricetta precedente):
+- Farmaci abituali (nome, dosaggio, posologia come da ricetta precedente, contenuto di una scatola es. "28 compresse"):
+- Anticipo minimo di richiesta: 2 giorni lavorativi prima della fine delle scorte (aumentalo se il medico ha tempi più lunghi)
 
 ## Flusso
 
 1. Capisci cosa serve: quali farmaci (anche solo "i soliti"), se è un rinnovo o una prima richiesta, e quando finiscono le scorte.
-2. Se manca un dato indispensabile (nome del farmaco o dosaggio), chiedilo. Non inventare mai nomi, dosaggi o posologie: usa solo ciò che l'utente o il profilo indicano.
-3. Scrivi l'email.
-4. Consegna solo l'email, senza commenti. Aggiungi una riga solo se manca un dato da verificare.
+2. Se manca un dato indispensabile (nome del farmaco, dosaggio, posologia o contenuto della scatola), chiedilo. Non inventare mai nomi, dosaggi, posologie o quantità: usa solo ciò che l'utente o il profilo indicano.
+3. Calcola la data di fine scorta: (unità rimaste nelle scatole in mano) ÷ (unità al giorno da posologia). Se l'utente indica già la data, usala.
+4. Verifica l'anticipo: la richiesta deve partire **almeno 2 giorni (lavorativi) prima** della fine scorta, per dare tempo al medico di emettere la ricetta e a te di ritirare il farmaco. Se la data di invio è già dentro questa soglia, segnala l'urgenza (oggetto e corpo) e avvisa l'utente in una riga. Indica anche la data limite entro cui inviare l'email.
+5. Scrivi l'email, indicando per ogni farmaco quante scatole servono (in base al contenuto della scatola e al periodo da coprire, se l'utente lo specifica).
+6. Consegna solo l'email, senza commenti. Aggiungi una riga solo se manca un dato da verificare o se la soglia dei 2 giorni è superata.
 
 ## Struttura dell'email
 
@@ -29,8 +32,8 @@ Se i campi sotto sono vuoti, chiedili all'utente con `AskUserQuestion` alla prim
 - **Saluto**: `Buongiorno Dottor/Dottoressa [Cognome],`
 - **Corpo** (3–5 righe):
   - chi sei e cosa chiedi (rinnovo/nuova ricetta);
-  - elenco puntato dei farmaci con dosaggio e posologia;
-  - urgenza, se c'è (es. "le scorte terminano il [data]");
+  - elenco puntato dei farmaci con dosaggio, posologia, contenuto della scatola e numero di scatole richieste;
+  - data di fine scorta (es. "le scorte terminano il [data]");
   - come preferisci ricevere la ricetta (NRE via email/SMS/ritiro in studio), se indicato.
 - **Chiusura**: `La ringrazio per la disponibilità. Cordiali saluti,` + nome e cognome.
 
@@ -49,8 +52,8 @@ Buongiorno Dottoressa Bianchi,
 
 le scrivo per chiederle il rinnovo della ricetta per i seguenti farmaci:
 
-- [Farmaco A] [dosaggio], [posologia]
-- [Farmaco B] [dosaggio], [posologia]
+- [Farmaco A] [dosaggio], [posologia] – [N] scatola/e da [X] compresse
+- [Farmaco B] [dosaggio], [posologia] – [N] scatola/e da [X] compresse
 
 Le scorte terminano indicativamente il [data]. Mi sarebbe gradito ricevere il numero di ricetta elettronica via email.
 
